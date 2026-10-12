@@ -108,7 +108,12 @@ function requestOpper(input: OpperRequest, context: RequestContext): Promise<Rec
           optionalString(error?.error) ??
           optionalString(error?.message) ??
           `Opper request failed with HTTP ${response.status}`;
-        throw new ProviderRequestError(response.status, message, payload);
+        throw new ProviderRequestError(
+          response.status,
+          message,
+          payload,
+          response.status === 429 ? "rate_limited" : "provider_error",
+        );
       }
       const result = requiredResponseRecord(payload, "Opper response");
       if (input.path === "/models" && !Array.isArray(result.data)) {
