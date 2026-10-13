@@ -23,8 +23,10 @@ export const shopifyOAuth: ProviderOAuthRuntime = {
     }
     const supplied = query.get("hmac") ?? "";
     query.delete("hmac");
+    query.delete("signature");
     query.sort();
-    const message = [...query].map(([key, value]) => `${key}=${value}`).join("&");
+    // Match the official SDK encoding, including %20 for spaces.
+    const message = query.toString().replaceAll("+", "%20");
     const expected = hmacHex(input.clientConfig.clientSecret, message);
     if (
       Buffer.byteLength(supplied) !== Buffer.byteLength(expected) ||
@@ -43,7 +45,8 @@ export const shopifyOAuth: ProviderOAuthRuntime = {
           client_id: input.clientConfig.clientId,
           client_secret: input.clientConfig.clientSecret,
           code: input.code,
-          expiring: true,
+          // Match the official SDK JSON token request.
+          expiring: "1",
         }),
       },
       input.fetcher,

@@ -96,7 +96,9 @@ export const operationQueries: Record<string, string> = {
   create_refund:
     "mutation Shopify_create_refund($input: RefundInput!, $idempotencyKey: String!) { refundCreate(input: $input) @idempotent(key: $idempotencyKey) { refund { id createdAt totalRefundedSet { shopMoney { amount currencyCode } } } userErrors { field message } } }",
   cancel_order:
-    "mutation Shopify_cancel_order($orderId: ID!, $refund: Boolean, $refundMethod: OrderCancelRefundMethodInput, $restock: Boolean!, $reason: OrderCancelReason!, $notifyCustomer: Boolean = false, $staffNote: String = null) { orderCancel(orderId: $orderId, refund: $refund, refundMethod: $refundMethod, restock: $restock, reason: $reason, notifyCustomer: $notifyCustomer, staffNote: $staffNote) { job { id done } orderCancelUserErrors { field message code } userErrors { field message } } }",
+    "mutation Shopify_cancel_order($orderId: ID!, $refund: Boolean, $refundMethod: OrderCancelRefundMethodInput, $restock: Boolean!, $reason: OrderCancelReason!, $notifyCustomer: Boolean = false, $staffNote: String = null) { orderCancel(orderId: $orderId, refund: $refund, refundMethod: $refundMethod, restock: $restock, reason: $reason, notifyCustomer: $notifyCustomer, staffNote: $staffNote) { jobResult { id done status errors { field message code } order { id name } } orderCancelUserErrors { field message code } userErrors { field message } } }",
+  get_order_cancel_result:
+    "query Shopify_get_order_cancel_result($id: ID!) { jobResult: node(id: $id) { id ... on OrderCancelJobResult { done status errors { field message code } order { id name } } } }",
   get_job: "query Shopify_get_job($id: ID!) { job(id: $id) { id done } }",
   get_product_operation:
     "query Shopify_get_product_operation($id: ID!) { productOperation(id: $id) { status ... on ProductDeleteOperation { id deletedProductId userErrors { field message } } ... on ProductDuplicateOperation { id newProduct { id title } userErrors { field message } } } }",

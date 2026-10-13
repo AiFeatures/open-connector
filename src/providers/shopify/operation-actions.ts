@@ -8,7 +8,7 @@ const lifecycleByName: Record<string, ActionDefinition["asyncLifecycle"]> = {
     startActionId: "shopify.remove_collection_products",
     statusActionId: "shopify.get_job",
   },
-  cancel_order: { startActionId: "shopify.cancel_order", statusActionId: "shopify.get_job" },
+  cancel_order: { startActionId: "shopify.cancel_order", statusActionId: "shopify.get_order_cancel_result" },
   delete_product: { startActionId: "shopify.delete_product", statusActionId: "shopify.get_product_operation" },
   duplicate_product: { startActionId: "shopify.duplicate_product", statusActionId: "shopify.get_product_operation" },
   create_files: { startActionId: "shopify.create_files", statusActionId: "shopify.get_file" },

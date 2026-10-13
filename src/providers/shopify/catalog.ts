@@ -1,7 +1,7 @@
 import type { ShopifyActionHandler } from "./context.ts";
 
-import { optionalInteger, optionalRecord, optionalString } from "../../core/cast.ts";
-import { requiredResponseRecord } from "../provider-runtime.ts";
+import { optionalInteger, optionalRecord, optionalString, requiredRawString } from "../../core/cast.ts";
+import { requiredResponseRecord, providerResponseError } from "../provider-runtime.ts";
 import { requestShopifyGraphQL } from "./client.ts";
 import {
   readMutationResult,
@@ -232,8 +232,8 @@ function normalizeCollectionDetail(raw: Record<string, unknown>) {
     id: readRequiredString(raw, "id"),
     title: readRequiredString(raw, "title"),
     handle: readRequiredString(raw, "handle"),
-    description: readRequiredString(raw, "description"),
-    descriptionHtml: readRequiredString(raw, "descriptionHtml"),
+    description: requiredRawString(raw.description, "description", providerResponseError),
+    descriptionHtml: requiredRawString(raw.descriptionHtml, "descriptionHtml", providerResponseError),
     updatedAt: optionalString(raw.updatedAt) ?? null,
     imageUrl: optionalString(image?.url) ?? null,
     raw,

@@ -27,7 +27,7 @@ const errors = s.array(
     {
       field: s.nullable(strings),
       message: text,
-      code: text,
+      code: s.nullable(text),
     },
     { required: ["message"], additionalProperties: true },
   ),
@@ -43,6 +43,17 @@ const pageInfo = s.object(
   { required: [], additionalProperties: true },
 );
 const job = s.object("A Shopify background job.", { id, done: flag }, { additionalProperties: true, optional: [] });
+const orderCancelResult = s.object(
+  "The asynchronous order cancellation result.",
+  {
+    id,
+    done: s.boolean("Whether the cancellation job has finished; inspect status to determine success."),
+    status: s.stringEnum("The order cancellation status.", ["STARTED", "SUCCEEDED", "FAILED"]),
+    errors,
+    order: s.nullable(resource),
+  },
+  { additionalProperties: true, optional: [] },
+);
 const productOperation = s.object(
   "An asynchronous product operation.",
   {
@@ -468,7 +479,7 @@ export const operations: ShopifyOperation[] = [
       staffNote: s.nullable(text),
     },
     ["orderId", "restock", "reason"],
-    { job, orderCancelUserErrors: errors, userErrors: errors },
+    { jobResult: s.nullable(orderCancelResult), orderCancelUserErrors: errors, userErrors: errors },
   ),
   operation(
     "create_refund",
@@ -854,6 +865,15 @@ export const operations: ShopifyOperation[] = [
     { fileIds: ids },
     ["fileIds"],
     { deletedFileIds: ids, userErrors: errors },
+  ),
+  operation(
+    "get_order_cancel_result",
+    "jobResult",
+    "read",
+    "Poll an order cancellation and return its success or failure status and errors. Requires read_orders and order cancellation permission.",
+    { id },
+    ["id"],
+    { jobResult: s.nullable(orderCancelResult) },
   ),
   operation("get_job", "job", "read", "Check whether a Shopify background job has completed.", { id }, ["id"], {
     job: s.nullable(

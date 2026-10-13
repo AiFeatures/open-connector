@@ -41,6 +41,9 @@ export const operationHandlers: Record<string, ShopifyActionHandler> = Object.fr
       if (operation.name === "get_file" && record && typeof record.fileStatus !== "string") {
         throw new ProviderRequestError(400, "The supplied ID does not identify a Shopify file");
       }
+      if (operation.name === "get_order_cancel_result" && record && typeof record.status !== "string") {
+        throw new ProviderRequestError(400, "The supplied ID does not identify a Shopify order cancellation result");
+      }
       return operation.operationType === "read"
         ? { [operation.field]: value }
         : requiredResponseRecord(value, operation.field);
