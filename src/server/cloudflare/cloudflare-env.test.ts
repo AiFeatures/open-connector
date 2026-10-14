@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { readNonNegativeInteger } from "./env.ts";
+import { readNonNegativeInteger } from "./cloudflare-env.ts";
 
 describe("readNonNegativeInteger", () => {
   it("reads zero and positive integers", () => {
