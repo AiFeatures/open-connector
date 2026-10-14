@@ -63,38 +63,73 @@ describe("PGlite PostgreSQL protocol fixture", () => {
   });
 });
 
-it("waits for disconnected clients to roll back before closing PGlite", async () => {
+it.each([false, true])(
+  "waits for disconnected clients to roll back before closing PGlite (timeout: %s)",
+  async (timeout) => {
+    const fixture = await startPGliteTestServer();
+    const client = new Client({ connectionString: fixture.url });
+    const rollbackStarted = Promise.withResolvers<void>();
+    const finishRollback = Promise.withResolvers<void>();
+    const execute = fixture.database.exec.bind(fixture.database);
+    const exec = vi.spyOn(fixture.database, "exec").mockImplementation(async (sql, options) => {
+      if (sql === "ROLLBACK") {
+        rollbackStarted.resolve();
+        await finishRollback.promise;
+      }
+      return execute(sql, options);
+    });
+    const close = vi.spyOn(fixture.database, "close");
+    const failure = new Error("PGlite shutdown timed out");
+    const waitFor = vi.spyOn(vi, "waitFor");
+    let closing: Promise<void> | undefined;
+    try {
+      await client.connect();
+      await client.query("begin");
+      await client.end();
+      await rollbackStarted.promise;
+      if (timeout) waitFor.mockRejectedValueOnce(failure);
+      closing = timeout ? expect(fixture.close()).rejects.toBe(failure) : fixture.close();
+      await setImmediate();
+      expect(close).not.toHaveBeenCalled();
+      finishRollback.resolve();
+      await closing;
+      expect(close).toHaveBeenCalledOnce();
+    } finally {
+      finishRollback.resolve();
+      await client.end();
+      await (closing ?? fixture.close());
+      exec.mockRestore();
+      close.mockRestore();
+      waitFor.mockRestore();
+    }
+  },
+);
+
+it.each(["select 1", "begin"])("closes leaked clients after a shutdown timeout (%s)", async (sql) => {
   const fixture = await startPGliteTestServer();
   const client = new Client({ connectionString: fixture.url });
-  const rollbackStarted = Promise.withResolvers<void>();
-  const finishRollback = Promise.withResolvers<void>();
-  const execute = fixture.database.exec.bind(fixture.database);
-  const exec = vi.spyOn(fixture.database, "exec").mockImplementation(async (sql, options) => {
-    if (sql === "ROLLBACK") {
-      rollbackStarted.resolve();
-      await finishRollback.promise;
-    }
-    return execute(sql, options);
-  });
-  const close = vi.spyOn(fixture.database, "close");
-  let closing: Promise<void> | undefined;
+  const ended = Promise.withResolvers<void>();
+  client.on("error", () => undefined);
+  client.on("end", () => ended.resolve());
+  const failure = new Error("PGlite shutdown timed out");
+  const waitFor = vi.spyOn(vi, "waitFor");
   try {
     await client.connect();
-    await client.query("begin");
-    await client.end();
-    await rollbackStarted.promise;
-    closing = fixture.close();
-    await setImmediate();
-    expect(close).not.toHaveBeenCalled();
-    finishRollback.resolve();
-    await closing;
-    expect(close).toHaveBeenCalledOnce();
+    await client.query(sql);
+    waitFor.mockRejectedValueOnce(failure);
+    await expect(fixture.close()).rejects.toBe(failure);
+    await ended.promise;
+    expect(fixture.database.closed).toBe(true);
+    const probe = new Client({ connectionString: fixture.url });
+    try {
+      await expect(probe.connect()).rejects.toMatchObject({ code: "ECONNREFUSED" });
+    } finally {
+      await probe.end();
+    }
   } finally {
-    finishRollback.resolve();
+    waitFor.mockRestore();
     await client.end();
-    await (closing ?? fixture.close());
-    exec.mockRestore();
-    close.mockRestore();
+    if (!fixture.database.closed) await fixture.close();
   }
 });
 

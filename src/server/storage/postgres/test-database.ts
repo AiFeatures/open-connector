@@ -1,5 +1,6 @@
 import { PGlite } from "@electric-sql/pglite";
 import { PGLiteSocketServer } from "@electric-sql/pglite-socket";
+import { setImmediate } from "node:timers/promises";
 import { expect, vi } from "vitest";
 
 export interface PGliteTestServer {
@@ -35,15 +36,21 @@ export async function startPGliteTestServer(): Promise<PGliteTestServer> {
     async close() {
       // stop() does not await deferred socket close handlers or their transaction rollback.
       // Callers must end their pg clients/pools before disposing the database.
-      await vi.waitFor(
-        () => {
-          expect(server.getStats().activeConnections).toBe(0);
-          expect(database.isInTransaction()).toBe(false);
-        },
-        { timeout: 5_000 },
-      );
-      await server.stop();
-      await database.close();
+      try {
+        await vi.waitFor(
+          () => {
+            expect(server.getStats().activeConnections).toBe(0);
+            expect(database.isInTransaction()).toBe(false);
+          },
+          { timeout: 5_000 },
+        );
+      } finally {
+        await server.stop();
+        // stop() can leave setImmediate close callbacks and detached transactions pending.
+        await setImmediate();
+        await vi.waitFor(() => expect(database.isInTransaction()).toBe(false), { timeout: 5_000 });
+        await database.close();
+      }
     },
     url: `postgresql://postgres:postgres@${server.getServerConn()}/postgres?sslmode=disable`,
   };
