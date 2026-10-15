@@ -65,7 +65,7 @@ const feishuImageUploadType = "message";
 const feishuRateLimitedErrorCodes = new Set([11232, 11233, 11247, 230020, 230047, 99991400, 1000004, 1000005]);
 const feishuCredentialExpiredErrorCodes = new Set([
   4001, 10005, 10012, 10013, 10014, 10015, 20002, 20005, 20013, 20014, 99991543, 99991661, 99991663, 99991664, 99991665,
-  99991671, 99991673,
+  99991668, 99991671, 99991677,
 ]);
 const feishuScopeMissingErrorCodes = new Set([10023, 11223, 11229, 11241, 99991672, 99991676, 99991679]);
 
@@ -1118,7 +1118,7 @@ function normalizeFeishuError(input: {
   if (input.phase === "validate") {
     return new ProviderRequestError(input.status >= 500 ? 502 : 400, taggedMessage, input.envelope);
   }
-  if (input.status === 401 || (code !== null && feishuCredentialExpiredErrorCodes.has(code))) {
+  if (code !== null && feishuCredentialExpiredErrorCodes.has(code)) {
     return new ProviderRequestError(401, taggedMessage, input.envelope);
   }
   if (code !== null && feishuScopeMissingErrorCodes.has(code)) {
@@ -1128,9 +1128,9 @@ function normalizeFeishuError(input: {
     return new ProviderRequestError(400, message, input.envelope);
   }
   if (input.status >= 400 && input.status < 500) {
-    return new ProviderRequestError(input.status, taggedMessage, input.envelope);
+    return new ProviderRequestError(input.status, taggedMessage, input.envelope, "provider_error");
   }
-  return new ProviderRequestError(502, taggedMessage, input.envelope);
+  return new ProviderRequestError(502, taggedMessage, input.envelope, "provider_error");
 }
 
 async function uploadFeishuMediaTransitFile(input: {

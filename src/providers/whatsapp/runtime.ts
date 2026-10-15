@@ -847,6 +847,13 @@ function resolveTemplateAnalyticsWindow(
 ): { start: string | number; end: string | number } {
   const startDate = readString(input.start);
   const endDate = readString(input.end);
+  for (const date of [startDate, endDate]) {
+    if (
+      date !== undefined &&
+      (!Number.isFinite(Date.parse(date)) || new Date(date).toISOString().slice(0, 10) !== date)
+    )
+      throw providerInputError("whatsapp template analytics requires valid calendar dates");
+  }
   const window = resolveAnalyticsWindow(
     {
       start: startDate === undefined ? optionalInteger(input.start) : Date.parse(startDate) / 1000,

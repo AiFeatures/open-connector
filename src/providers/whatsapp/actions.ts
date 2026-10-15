@@ -278,12 +278,16 @@ export const whatsappActions: ActionDefinition[] = [
       [],
       "Input for reading WhatsApp message analytics.",
     ),
-    outputSchema: s.actionOutput({
-      granularity: s.string("Width of each data point as returned by Meta."),
-      phone_numbers: s.stringArray("Business phone numbers the data covers."),
-      country_codes: s.stringArray("Two-letter country codes the data covers."),
-      data_points: s.array("One entry per window.", messageAnalyticsDataPoint),
-    }),
+    outputSchema: s.actionOutput(
+      {
+        granularity: s.string("Width of each data point as returned by Meta."),
+        phone_numbers: s.stringArray("Business phone numbers the data covers."),
+        country_codes: s.stringArray("Two-letter country codes the data covers."),
+        data_points: s.array("One entry per window.", messageAnalyticsDataPoint),
+      },
+      "Action output.",
+      ["granularity", "data_points"],
+    ),
   }),
   defineProviderAction(service, {
     name: "get_pricing_analytics",
@@ -366,11 +370,15 @@ export const whatsappActions: ActionDefinition[] = [
       ["template_ids"],
       "Input for reading WhatsApp template analytics.",
     ),
-    outputSchema: s.actionOutput({
-      waba_timezone: s.string("Timezone the windows are expressed in, present when use_waba_timezone is true."),
-      data_points: s.array("One entry per template and day.", templateAnalyticsDataPoint),
-      paging,
-    }),
+    outputSchema: s.actionOutput(
+      {
+        waba_timezone: s.string("Timezone the windows are expressed in, present when use_waba_timezone is true."),
+        data_points: s.array("One entry per template and day.", templateAnalyticsDataPoint),
+        paging,
+      },
+      "Action output.",
+      ["data_points"],
+    ),
   }),
   defineProviderAction(service, {
     name: "create_message_template",
