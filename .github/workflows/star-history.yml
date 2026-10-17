@@ -27,6 +27,7 @@ permissions:
 
 jobs:
   star-history:
+    if: github.repository_owner == 'oomol-lab'
     name: Render & Commit Chart
     runs-on: ubuntu-latest
     steps:
